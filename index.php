@@ -1,11 +1,21 @@
+
 <?php
 require_once 'connexion.php';
- 
-// TODO 1 (Ex 7) : Récupérer tous les patients de la table 'personnes' dans un tableau $personnes
-$personnes = [];
- 
-// TODO 2 (Ex 7) : Récupérer l'historique des mesures avec le nom du patient (INNER JOIN) dans $mesures
-$mesures = [];
+
+// TODO 1 : Récupérer toutes les personnes
+$sql = "SELECT * FROM personnes";
+$stmt = $pdo->query($sql);
+$personnes = $stmt->fetchAll();
+
+// TODO 2 : Récupérer l'historique avec le nom de la personne
+$sql = "SELECT mesures.*, personnes.nom, personnes.prenom
+        FROM mesures
+        INNER JOIN personnes
+        ON mesures.personne_id = personnes.id
+        ORDER BY mesures.date_mesure DESC";
+
+$stmt = $pdo->query($sql);
+$mesures = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -20,43 +30,49 @@ $mesures = [];
     <header>
         <h1>Calculateur d'IMC</h1>
     </header>
- 
+
     <main>
         <section>
             <h2>Saisie</h2>
-            <!-- TODO 3 (Ex 7) : Ajouter action="ajouter.php" et method="POST" sur le formulaire -->
-            <form class="imc">
+
+            <form class="imc" action="ajouter.php" method="POST">
                 <label>
                     Personne
                     <select name="personne_id" required>
                         <option value="">-- Choisir --</option>
-                        <!-- TODO 4 (Ex 7 & 8) : Boucler sur $personnes pour générer les <option> (n'oubliez pas htmlspecialchars) -->
+
+                        <?php foreach ($personnes as $personne): ?>
+                            <option value="<?= htmlspecialchars($personne['id']) ?>">
+                                <?= htmlspecialchars($personne['nom'] . ' ' . $personne['prenom']) ?>
+                            </option>
+                        <?php endforeach; ?>
+
                     </select>
                 </label>
- 
+
                 <label>
                     Poids (kg)
                     <input id="imc-poids" name="poids" type="number" step="0.1" min="20" max="300" required />
                 </label>
- 
+
                 <label>
                     Taille (m)
                     <input id="imc-taille" name="taille" type="number" step="0.01" min="0.5" max="2.5" required />
                 </label>
- 
+
                 <div>
                     <button id="imc-calculer" type="button">Calculer</button>
                     <button type="submit">Enregistrer la mesure</button>
                 </div>
             </form>
         </section>
- 
+
         <section>
             <h2>Résultat</h2>
             <p>Votre IMC : <strong id="imc-valeur">-</strong></p>
             <p>Catégorie : <strong id="imc-categorie">-</strong></p>
         </section>
- 
+
         <section>
             <h2>Historique des mesures</h2>
             <table>
@@ -71,14 +87,35 @@ $mesures = [];
                         <th>Action</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    <!-- TODO 5 (Ex 7 & 8) : Boucler sur $mesures pour afficher chaque ligne <tr> -->
-                    <!-- N'oubliez pas le lien : <a href="supprimer.php?id=...">Supprimer</a> -->
+                    <?php foreach ($mesures as $mesure): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($mesure['nom'] . ' ' . $mesure['prenom']) ?></td>
+                            <td><?= htmlspecialchars($mesure['poids']) ?></td>
+                            <td><?= htmlspecialchars($mesure['taille']) ?></td>
+                            <td><?= htmlspecialchars($mesure['imc']) ?></td>
+                            <td><?= htmlspecialchars($mesure['categorie']) ?></td>
+                            <td><?= htmlspecialchars($mesure['date_mesure']) ?></td>
+                            <td>
+                                <a href="supprimer.php?id=<?= htmlspecialchars($mesure['id']) ?>"
+                                   onclick="return confirm('Voulez-vous vraiment supprimer cette mesure ?')">
+                                    Supprimer
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+
+                    <?php if (empty($mesures)): ?>
+                        <tr>
+                            <td colspan="7">Aucune mesure enregistrée.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </section>
     </main>
- 
+
     <footer>
         <p>Centre de nutrition — ISTMT</p>
     </footer>
